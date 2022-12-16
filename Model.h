@@ -4,13 +4,14 @@
 #include <array>
 #include <vector>
 #include <string>
+#include "Skeleton.h"
 
 
 struct Vertex
 {
     std::array<float, 3> pos;
     std::array<float, 3> normal;
-    std::array<std::string, 4> bones;
+    std::array<BoneIndex, 4> bones;
     std::array<float, 4> bone_weights;
 };
 

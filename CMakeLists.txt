@@ -17,6 +17,8 @@ set(PROJECT_SOURCES
     Viewer.h
     Model.h
     SafeGl.h
+    Skeleton.h
+    Skeleton.cpp
 )
 set(PROJECT_SHADERS
     shaders/vert.glsl

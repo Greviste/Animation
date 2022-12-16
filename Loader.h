@@ -5,6 +5,7 @@
 #include "Model.h"
 
 
-ModelData decodeFbx(const std::filesystem::path& file);
+using LoadedData = std::tuple<ModelData, Skeleton>;
+LoadedData decodeFbx(const std::filesystem::path& file);
 
 #endif

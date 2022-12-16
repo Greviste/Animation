@@ -39,46 +39,75 @@ namespace
         return true;
     }
 
-    ModelData loadModel(const FbxMesh& mesh)
+    auto setupUniqueManager()
     {
-        double max = 0;
+        auto u_manager = CreateUnique<FbxManager>();
+        manager = u_manager.get();
+        return u_manager;
+    }
+
+    FbxScene& importScene(const std::filesystem::path& file)
+    {
+        FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
+        ios->SetBoolProp(IMP_FBX_MATERIAL, false);
+        ios->SetBoolProp(IMP_FBX_TEXTURE, false);
+        auto importer = CreateUnique<FbxImporter>(manager, "");
+        if(!importer->Initialize(file.c_str(), -1, ios))
+            throw std::runtime_error("Unable to open fbx");
+        FbxScene* scene = FbxScene::Create(manager, "scene");
+        importer->Import(scene);
+
+        return *scene;
+    }
+
+    auto decodeMeshGeometry(const FbxMesh& mesh)
+    {
+        std::tuple<ModelData, std::vector<std::vector<unsigned>>> result;
+        auto& [data, vertex_instances] = result;
+
         int size = mesh.GetControlPointsCount();
         int faces = mesh.GetPolygonCount();
+        data.vertices.reserve(size);
+        data.faces.reserve(faces);
         const FbxVector4* vectors = mesh.GetControlPoints();
+        vertex_instances.resize(size);
 
-        ModelData result;
-        result.vertices.reserve(size);
-        result.faces.reserve(faces);
-        std::vector<std::vector<unsigned>> vertex_instances(size);
-        auto findOrBuild = [&](int polygon, int i)
+        auto getVertexInstance = [&](int polygon, int i)
         {
             int index = mesh.GetPolygonVertex(polygon, i);
             FbxVector4 normal; mesh.GetPolygonVertexNormal(polygon, i, normal);
             for(unsigned other_index : vertex_instances[index])
             {
-                if(result.vertices[other_index].normal == normal) return other_index;
+                if(data.vertices[other_index].normal == normal) return other_index;
             }
             Vertex v{};
             for(int i = 0; i < 3; ++i) v.pos[i] = vectors[index][i];
             for(int i = 0; i < 3; ++i) v.normal[i] = normal[i];
-            vertex_instances[index].push_back(result.vertices.size());
-            result.vertices.push_back(std::move(v));
+            vertex_instances[index].push_back(data.vertices.size());
+            data.vertices.push_back(std::move(v));
             return vertex_instances[index].back();
         };
+
         for(int i = 0; i < faces; ++i)
         {
-            int ps = mesh.GetPolygonSize(i);
-            unsigned first_i = findOrBuild(i, 0);
-            unsigned previous_i = findOrBuild(i, 1);
-            for(int j = 2; j < ps; ++j)
+            int polygon_size = mesh.GetPolygonSize(i);
+            unsigned first_i = getVertexInstance(i, 0);
+            unsigned previous_i = getVertexInstance(i, 1);
+            for(int j = 2; j < polygon_size; ++j)
             {
-                unsigned current_i = findOrBuild(i, j);
-                result.faces.emplace_back(Triangle{{first_i, previous_i, current_i}});
+                unsigned current_i = getVertexInstance(i, j);
+                data.faces.emplace_back(Triangle{{first_i, previous_i, current_i}});
                 previous_i = current_i;
             }
         }
 
+        return result;
+    }
+
+    void decodeMeshSkinning(const FbxMesh& mesh, ModelData& data, std::vector<std::vector<unsigned>>& vertex_instances)
+    {
         if(mesh.GetDeformerCount(FbxSkin::eSkin) != 1) throw std::runtime_error("Model should have exactly one skin!");
+
         const FbxSkin& skin = *static_cast<FbxSkin*>(mesh.GetDeformer(0, FbxSkin::eSkin));
         int clusters = skin.GetClusterCount();
         for(int i = 0; i < clusters; ++i)
@@ -88,48 +117,57 @@ namespace
             std::string bone_name = cluster.GetLink()->GetName();
             for(int j = 0; j < weights; ++j)
             {
-                for(int index : vertex_instances[cluster.GetControlPointIndices()[j]])
+                for(unsigned index : vertex_instances[cluster.GetControlPointIndices()[j]])
                 {
-                    addWeightToVertex(result.vertices[index], bone_name, cluster.GetControlPointWeights()[j]);
+                    addWeightToVertex(data.vertices[index], bone_name, cluster.GetControlPointWeights()[j]);
                 }
             }
         }
-
-        return result;
     }
-}
 
-ModelData loadFbx(const std::filesystem::path& file)
-{
-    auto u_manager = CreateUnique<FbxManager>();
-    manager = u_manager.get();
-    FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
-    ios->SetBoolProp(IMP_FBX_MATERIAL, false);
-    ios->SetBoolProp(IMP_FBX_TEXTURE, false);
-    auto importer = CreateUnique<FbxImporter>(manager, "");
-    if(!importer->Initialize(file.c_str(), -1, ios))
-        throw std::runtime_error("Unable to open fbx");
-    FbxScene* scene = FbxScene::Create(manager, "scene");
-    importer->Import(scene);
-
-    int n_geom = scene->GetGeometryCount();
-    if(n_geom == 0)
-        throw std::runtime_error("Scene should have at least one geometry!");
-
-    ModelData model = loadModel(dynamic_cast<FbxMesh&>(*scene->GetGeometry(0)));
-    for(int i = 1; i < n_geom; ++i)
+    ModelData decodeMesh(const FbxMesh& mesh)
     {
-        ModelData other_model = loadModel(dynamic_cast<FbxMesh&>(*scene->GetGeometry(i)));
-        int offset = model.vertices.size();
-        model.vertices.reserve(model.vertices.size() + other_model.vertices.size());
-        model.faces.reserve(model.faces.size() + other_model.faces.size());
+        auto [data, vertex_instances] = decodeMeshGeometry(mesh);
+        decodeMeshSkinning(mesh, data, vertex_instances);
 
-        std::ranges::move(other_model.vertices, std::back_inserter(model.vertices));
-        std::ranges::transform(other_model.faces, std::back_inserter(model.faces), [&](Triangle& tri) {
+        return std::move(data);
+    }
+
+    void mergeModelData(ModelData& into, ModelData to_add)
+    {
+        int offset = into.vertices.size();
+        into.vertices.reserve(into.vertices.size() + to_add.vertices.size());
+        into.faces.reserve(into.faces.size() + to_add.faces.size());
+
+        std::ranges::move(to_add.vertices, std::back_inserter(into.vertices));
+        std::ranges::transform(to_add.faces, std::back_inserter(into.faces), [&](Triangle& tri) {
             for(auto& id : tri.indexes) id += offset;
             return tri;
         });
     }
+
+    ModelData decodeAllMeshes(FbxScene& scene)
+    {
+        int n_geom = scene.GetGeometryCount();
+        if(n_geom == 0)
+            throw std::runtime_error("Scene should have at least one geometry!");
+
+        ModelData model = decodeMesh(dynamic_cast<FbxMesh&>(*scene.GetGeometry(0)));
+        for(int i = 1; i < n_geom; ++i)
+        {
+            mergeModelData(model, decodeMesh(dynamic_cast<FbxMesh&>(*scene.GetGeometry(i))));
+        }
+
+        return model;
+    }
+}
+
+ModelData decodeFbx(const std::filesystem::path& file)
+{
+    auto u_manager = setupUniqueManager();
+    FbxScene& scene = importScene(file);
+
+    ModelData model = decodeAllMeshes(scene);
 
     return model;
 }

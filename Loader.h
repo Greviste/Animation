@@ -5,6 +5,6 @@
 #include "Model.h"
 
 
-ModelData loadFbx(const std::filesystem::path& file);
+ModelData decodeFbx(const std::filesystem::path& file);
 
 #endif

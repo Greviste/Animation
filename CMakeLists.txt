@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.22)
 project (Animation)
 include(ImportFbxSdk.cmake)
 include(ImportQGLViewer.cmake)
+find_package(Eigen3 REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -33,7 +34,7 @@ set_target_properties(${PROJECT_NAME}
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO
 )
-target_link_libraries(${PROJECT_NAME} FbxSdk QGLViewer)
+target_link_libraries(${PROJECT_NAME} FbxSdk QGLViewer Eigen3::Eigen)
 
 #Copy ressources next to executable
 foreach(RES ${PROJECT_SHADERS})

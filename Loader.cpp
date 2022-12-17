@@ -33,7 +33,7 @@ namespace
         return std::unique_ptr<T, Deleter>{T::Create(std::forward<Args>(args)...)};
     }
 
-    bool operator==(const std::array<float, 3>& l, const FbxVector4& r)
+    bool operator==(const Eigen::Vector3f& l, const FbxVector4& r)
     {
         for(int i = 0; i < 3; ++i) if(l[i] != r[i]) return false;
         return true;

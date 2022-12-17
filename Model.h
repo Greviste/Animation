@@ -5,12 +5,13 @@
 #include <vector>
 #include <string>
 #include "Skeleton.h"
+#include <Eigen/Dense>
 
 
 struct Vertex
 {
-    std::array<float, 3> pos;
-    std::array<float, 3> normal;
+    Eigen::Vector3f pos;
+    Eigen::Vector3f normal;
     std::array<BoneIndex, 4> bones;
     std::array<float, 4> bone_weights;
 };

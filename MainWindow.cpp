@@ -11,5 +11,6 @@ MainWindow::MainWindow()
 void MainWindow::on_open_action_triggered()
 {
     QString file = QFileDialog::getOpenFileName(this, "Open FBX file", "", "FBX files (*.fbx)");
-    viewer->setModel(get<ModelData>(decodeFbx(file.toLocal8Bit().data())));
+    auto result = decodeFbx(file.toLocal8Bit().data());
+    viewer->setModel(get<ModelData>(result), get<Skeleton>(result), get<AnimationData>(result));
 }

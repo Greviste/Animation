@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
     SafeGl.h
     Skeleton.h
     Skeleton.cpp
+    Animation.h
+    Animation.cpp
 )
 set(PROJECT_SHADERS
     shaders/vert.glsl

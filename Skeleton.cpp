@@ -2,20 +2,28 @@
 #include <algorithm>
 
 
-BoneIndex Skeleton::boneFromName(std::string_view name)
+Eigen::Matrix4f Transform::matrix() const
 {
-    auto result = findBone(name);
-    if(result)
-    {
-        return *result;
-    }
-    _bones.emplace_back(name);
-    return _bones.size() - 1;
+    return (Eigen::Translation3f{translation} * rotation * Eigen::AlignedScaling3f{scale}).matrix();
+}
+
+Eigen::Matrix4f Transform::inverseMatrix() const
+{
+    return (Eigen::AlignedScaling3f{scale}.inverse() * rotation.conjugate() * Eigen::Translation3f{-translation}).matrix();
+}
+
+BoneIndex Skeleton::addBone(std::string name, Transform local_origin, std::optional<BoneIndex> parent)
+{
+    BoneIndex index = _bones.size();
+    if(parent) _bones[*parent].children.push_back(index);
+    _bones.emplace_back(Bone{.parent=parent.value_or(index), .name=std::move(name), .local_origin=std::move(local_origin)});
+
+    return index;
 }
 
 std::optional<BoneIndex> Skeleton::findBone(std::string_view name) const
 {
-    auto it = std::ranges::find(_bones, name);
+    auto it = std::ranges::find(_bones, name, &Bone::name);
     if(it == _bones.end())
     {
         return std::nullopt;
@@ -30,5 +38,15 @@ BoneIndex Skeleton::boneCount() const
 
 std::string_view Skeleton::boneName(BoneIndex index) const
 {
-    return _bones[index];
+    return _bones[index].name;
+}
+
+const std::vector<BoneIndex>& Skeleton::boneChildren(BoneIndex index) const
+{
+    return _bones[index].children;
+}
+
+const Transform& Skeleton::boneTransform(BoneIndex index) const
+{
+    return _bones[index].local_origin;
 }

@@ -7,6 +7,7 @@
 
 
 using Seconds = std::chrono::duration<float>;
+using Frames = std::chrono::duration<int, std::ratio<1, 60>>;
 
 struct Keyframe
 {
@@ -31,6 +32,7 @@ struct AnimationCurve
 struct AnimationData
 {
     std::vector<AnimationCurve> curves;
+    Frames duration;
 };
 
 #endif

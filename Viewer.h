@@ -15,13 +15,21 @@ public:
 
     void setModel(const ModelData& model, const Skeleton& skeleton, const AnimationData& anim);
 
+signals:
+    void frameChanged(int);
+    void animLengthSet(int);
+
 public slots:
     void displaySkeleton(bool display);
     void displayPose(bool display);
+    void setFrame(int f);
 
 protected:
     void init() override;
     void draw() override;
+    void startAnimation() override;
+    void stopAnimation() override;
+    void animate() override;
 
 private:
     std::vector<Eigen::Matrix4f> buildBoneMats(Seconds at) const;
@@ -37,6 +45,9 @@ private:
 
     bool _display_skeleton = false;
     bool _display_pose = false;
+
+    Frames _frame;
+    std::chrono::high_resolution_clock::time_point _last_frame;
 };
 
 #endif

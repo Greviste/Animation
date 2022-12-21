@@ -304,6 +304,8 @@ private:
                 anim.curves[i].keyframes.emplace_back(frame, skeleton.boneTransform(i).rotation.conjugate() * toRotation(*armature[i], euler));
             }
         }
+        static_assert(std::is_same_v<decltype(anim.duration), Frames>, "Remember to update this line when you switch this type to Seconds!");
+        anim.duration = duration_cast<decltype(anim.duration)>(duration_s);
     }
 
     FbxManager* manager;

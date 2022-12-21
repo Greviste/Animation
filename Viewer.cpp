@@ -43,6 +43,10 @@ void Viewer::setModel(const ModelData& model, const Skeleton& skeleton, const An
 {
     _skeleton = skeleton;
     _anim = anim;
+    emit animLengthSet(anim.duration.count());
+    _frame = Frames{0};
+    emit frameChanged(0);
+
     constexpr float inf = std::numeric_limits<float>::infinity();
     qglviewer::Vec min{inf,inf,inf}, max{-inf,-inf,-inf};
     for(const Vertex& v : model.vertices)
@@ -92,6 +96,13 @@ void Viewer::displayPose(bool display)
     updateGL();
 }
 
+void Viewer::setFrame(int f)
+{
+    _frame = Frames{f};
+    emit frameChanged(f);
+    updateGL();
+}
+
 void Viewer::init()
 {
     auto& gl = QGl();
@@ -116,7 +127,7 @@ void Viewer::draw()
     float mvMatrix[16];
     camera()->getProjectionMatrix(pMatrix);
     camera()->getModelViewMatrix(mvMatrix);
-    std::vector<Eigen::Matrix4f> bone_mats = buildBoneMats(Seconds{0});
+    std::vector<Eigen::Matrix4f> bone_mats = buildBoneMats(_frame);
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "proj_matrix"),
                                        1, GL_FALSE, pMatrix);
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "mv_matrix"),
@@ -143,8 +154,31 @@ void Viewer::draw()
         if(_display_pose)
         {
             glColor3f(1,0,0);
-            drawBones(Seconds{0});
+            drawBones(_frame);
         }
         gl.glEnable(GL_DEPTH_TEST);
+    }
+}
+
+void Viewer::startAnimation()
+{
+    QGLViewer::startAnimation();
+    _last_frame = std::chrono::high_resolution_clock::now();
+}
+
+void Viewer::stopAnimation()
+{
+    if(animationIsStarted()) //QGLViewer seems to try to delete its timer multiple times
+        QGLViewer::stopAnimation();
+}
+
+void Viewer::animate()
+{
+    auto now = std::chrono::high_resolution_clock::now();
+    while(now - _last_frame > Frames{1})
+    {
+        if(++_frame >= _anim.duration) _frame = Frames{0};
+        _last_frame += duration_cast<decltype(_last_frame)::duration>(Frames{1});
+        emit frameChanged(_frame.count());
     }
 }

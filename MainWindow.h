@@ -12,6 +12,11 @@ public:
 
 private slots:
     void on_open_action_triggered();
+    void on_viewer_frameChanged(int f);
+    void on_viewer_animLengthSet(int f);
+
+private:
+    void updateText();
 };
 
 #endif

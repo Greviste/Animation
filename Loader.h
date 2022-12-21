@@ -7,8 +7,6 @@
 #include "Animation.h"
 
 
-using Frames = std::chrono::duration<int, std::ratio<1, 60>>;
-
 using LoadedData = std::tuple<ModelData, AnimationData, Skeleton>;
 LoadedData decodeFbx(const std::filesystem::path& file);
 

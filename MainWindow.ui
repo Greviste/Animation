@@ -166,6 +166,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="maximum">
+        <number>0</number>
+       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -213,6 +216,9 @@
    <slots>
     <slot>displaySkeleton(bool)</slot>
     <slot>displayPose(bool)</slot>
+    <slot>toggleAnimation()</slot>
+    <slot>stopAnimation()</slot>
+    <slot>setFrame(int)</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -315,6 +321,54 @@
     <hint type="destinationlabel">
      <x>529</x>
      <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>play_button</sender>
+   <signal>clicked()</signal>
+   <receiver>viewer</receiver>
+   <slot>toggleAnimation()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>487</x>
+     <y>526</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>482</x>
+     <y>466</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>frame_slider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>viewer</receiver>
+   <slot>setFrame(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>360</x>
+     <y>561</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>352</x>
+     <y>421</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>frame_slider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>viewer</receiver>
+   <slot>stopAnimation()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>284</x>
+     <y>556</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>275</x>
+     <y>462</y>
     </hint>
    </hints>
   </connection>

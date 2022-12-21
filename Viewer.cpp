@@ -76,16 +76,20 @@ void Viewer::setModel(const ModelData& model, const Skeleton& skeleton, const An
     gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, model.faces.size() * sizeof(Triangle), model.faces.data(), GL_STATIC_DRAW);
     gl.glBindVertexArray(0);
     _size = model.faces.size() * 3;
+
+    updateGL();
 }
 
 void Viewer::displaySkeleton(bool display)
 {
     _display_skeleton = display;
+    updateGL();
 }
 
 void Viewer::displayPose(bool display)
 {
     _display_pose = display;
+    updateGL();
 }
 
 void Viewer::init()

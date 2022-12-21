@@ -72,12 +72,38 @@
           <property name="text">
            <string>Linear</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
          <widget class="QRadioButton" name="dual_quat_skin_radio">
           <property name="text">
            <string>Dual quaternions</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Display</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QCheckBox" name="display_skel_checkbox">
+          <property name="text">
+           <string>Skeleton</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="display_pose_checkbox">
+          <property name="text">
+           <string>Pose</string>
           </property>
          </widget>
         </item>
@@ -184,6 +210,10 @@
    <class>Viewer</class>
    <extends>QOpenGLWidget</extends>
    <header location="global">Viewer.h</header>
+   <slots>
+    <slot>displaySkeleton(bool)</slot>
+    <slot>displayPose(bool)</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <tabstops>
@@ -253,6 +283,38 @@
     <hint type="destinationlabel">
      <x>-1</x>
      <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>display_skel_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewer</receiver>
+   <slot>displaySkeleton(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>644</x>
+     <y>199</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>472</x>
+     <y>202</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>display_pose_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewer</receiver>
+   <slot>displayPose(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>655</x>
+     <y>226</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>529</x>
+     <y>226</y>
     </hint>
    </hints>
   </connection>

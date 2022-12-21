@@ -78,6 +78,16 @@ void Viewer::setModel(const ModelData& model, const Skeleton& skeleton, const An
     _size = model.faces.size() * 3;
 }
 
+void Viewer::displaySkeleton(bool display)
+{
+    _display_skeleton = display;
+}
+
+void Viewer::displayPose(bool display)
+{
+    _display_pose = display;
+}
+
 void Viewer::init()
 {
     auto& gl = QGl();
@@ -114,14 +124,23 @@ void Viewer::draw()
     gl.glBindVertexArray(0);
     gl.glUseProgram(0);
 
-    gl.glDisable(GL_DEPTH_TEST);
-    glColor3f(0,0,1);
-    glBegin(GL_POINTS);
-    glVertex3d(0,0,0);
-    glEnd();
-    glColor3f(0,1,0);
-    drawBones();
-    glColor3f(1,0,0);
-    drawBones(Seconds{0});
-    gl.glEnable(GL_DEPTH_TEST);
+    if(_display_skeleton || _display_pose)
+    {
+        gl.glDisable(GL_DEPTH_TEST);
+        glColor3f(0,0,1);
+        glBegin(GL_POINTS);
+        glVertex3d(0,0,0);
+        glEnd();
+        if(_display_skeleton)
+        {
+            glColor3f(0,1,0);
+            drawBones();
+        }
+        if(_display_pose)
+        {
+            glColor3f(1,0,0);
+            drawBones(Seconds{0});
+        }
+        gl.glEnable(GL_DEPTH_TEST);
+    }
 }

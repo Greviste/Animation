@@ -39,17 +39,23 @@ void Model::draw(const qglviewer::Camera& camera, const Animation* anim, Seconds
 {
     auto& gl = QGl();
     gl.glUseProgram(_program);
-    float pMatrix[16];
-    float mvMatrix[16];
-    camera.getProjectionMatrix(pMatrix);
-    camera.getModelViewMatrix(mvMatrix);
+    Eigen::Matrix4f proj_matrix;
+    Eigen::Matrix4f mv_matrix;
+    camera.getProjectionMatrix(proj_matrix.data());
+    camera.getModelViewMatrix(mv_matrix.data());
+    Eigen::Matrix4f norm_matrix = mv_matrix.inverse();
     std::vector<Eigen::Matrix4f> bone_mats(_data->skeleton->boneCount(), Eigen::Matrix4f::Identity());
-    if(anim) bone_mats = anim->buildBoneMats(at);
+    std::vector<Eigen::Matrix4f> norm_bone_mats(_data->skeleton->boneCount(), Eigen::Matrix4f::Identity());
+    if(anim) std::tie(bone_mats, norm_bone_mats) = anim->buildBoneMats(at);
+
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "proj_matrix"),
-                                       1, GL_FALSE, pMatrix);
+                                       1, GL_FALSE, proj_matrix.data());
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "mv_matrix"),
-                                       1, GL_FALSE, mvMatrix);
+                                       1, GL_FALSE, mv_matrix.data());
+    gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "norm_matrix"),
+                                       1, GL_TRUE, norm_matrix.data());
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "bone_mats"), bone_mats.size(), GL_FALSE, reinterpret_cast<float*>(bone_mats.data()));
+    gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "norm_bone_mats"), norm_bone_mats.size(), GL_TRUE, reinterpret_cast<float*>(norm_bone_mats.data()));
 
     gl.glBindVertexArray(_vao);
     gl.glDrawElements(GL_TRIANGLES, _size, GL_UNSIGNED_INT, nullptr);

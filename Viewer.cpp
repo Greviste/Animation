@@ -108,7 +108,7 @@ void Viewer::draw()
         if(_anim && _display_pose)
         {
             glColor3f(1,0,0);
-            auto bone_mats = _anim->buildBoneMats(_time);
+            auto bone_mats = _anim->buildBoneMats(_time).first;
             drawBones(bone_mats.data());
         }
         gl.glEnable(GL_DEPTH_TEST);

@@ -30,19 +30,31 @@ Animation::Animation(std::shared_ptr<const AnimationData> data)
     if(!_data) throw std::invalid_argument("Animation built without data");
 }
 
-std::vector<Eigen::Matrix4f> Animation::buildBoneMats(Seconds at) const
+std::pair<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>> Animation::buildBoneMats(Seconds at) const
 {
-    std::vector<Eigen::Matrix4f> bone_mats(_data->skeleton->boneCount());
+    std::pair<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>> result;
+    auto& [bone_mats, norm_bone_mats] = result;
+    bone_mats.resize(_data->skeleton->boneCount());
+    norm_bone_mats.resize(_data->skeleton->boneCount());
     
-    _data->skeleton->exploreTree(0, [&](BoneIndex index, Eigen::Matrix4f& parent_mat_skinned, Eigen::Matrix4f& inv_parent_mat_unskinned) {
+    _data->skeleton->exploreTree(0,
+    [&](BoneIndex index, Eigen::Matrix4f& mat_skinned, Eigen::Matrix4f& inv_mat_skinned, Eigen::Matrix4f& mat_unskinned, Eigen::Matrix4f& inv_mat_unskinned)
+    {
         Transform transform = _data->skeleton->boneTransform(index);
-        inv_parent_mat_unskinned.applyOnTheLeft(transform.inverseMatrix());
-        transform.rotation *= _data->curves[index].sample(at);
-        parent_mat_skinned.applyOnTheRight(transform.matrix());
-        bone_mats[index] = parent_mat_skinned * inv_parent_mat_unskinned;
-    }, identity(), identity());
 
-    return bone_mats;
+        mat_unskinned.applyOnTheRight(transform.matrix());
+        inv_mat_unskinned.applyOnTheLeft(transform.inverseMatrix());
+
+        transform.rotation *= _data->curves[index].sample(at);
+
+        mat_skinned.applyOnTheRight(transform.matrix());
+        inv_mat_skinned.applyOnTheLeft(transform.inverseMatrix());
+
+        bone_mats[index] = mat_skinned * inv_mat_unskinned;
+        norm_bone_mats[index] = mat_unskinned * inv_mat_skinned;
+    }, identity(), identity(), identity(), identity());
+
+    return result;
 }
 
 Seconds Animation::duration() const

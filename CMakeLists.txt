@@ -17,6 +17,7 @@ set(PROJECT_SOURCES
     Loader.h
     Viewer.h
     Model.h
+    Model.cpp
     SafeGl.h
     Skeleton.h
     Skeleton.cpp

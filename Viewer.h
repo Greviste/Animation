@@ -13,7 +13,7 @@ class Viewer : public QGLViewer
 public:
     using QGLViewer::QGLViewer;
 
-    void setModel(const ModelData& model, const Skeleton& skeleton, const AnimationData& anim);
+    void setModel(std::unique_ptr<Model> model, std::unique_ptr<Animation> animation);
 
 signals:
     void frameChanged(int);
@@ -32,16 +32,11 @@ protected:
     void animate() override;
 
 private:
-    std::vector<Eigen::Matrix4f> buildBoneMats(Seconds at) const;
-    void drawBones(std::optional<Seconds> at = std::nullopt);
+    void drawBones(const Eigen::Matrix4f* bone_mats = nullptr);
+    void handleModelChanged();
 
-    SafeGl::VertexArray _vao;
-    SafeGl::Buffer _vertex_buffer;
-    SafeGl::Buffer _index_buffer;
-    SafeGl::Program _program;
-    Skeleton _skeleton;
-    AnimationData _anim;
-    std::size_t _size = 0;
+    std::unique_ptr<Model> _model;
+    std::unique_ptr<Animation> _anim;
 
     bool _display_skeleton = false;
     bool _display_pose = false;

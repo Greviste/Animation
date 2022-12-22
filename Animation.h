@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <chrono>
+#include <memory>
 #include <Eigen/Geometry>
+#include "Skeleton.h"
 
 
 using Seconds = std::chrono::duration<float>;
@@ -33,6 +35,19 @@ struct AnimationData
 {
     std::vector<AnimationCurve> curves;
     Frames duration;
+    std::shared_ptr<const Skeleton> skeleton;
+};
+
+class Animation
+{
+public:
+    Animation(std::shared_ptr<const AnimationData> data);
+    std::vector<Eigen::Matrix4f> buildBoneMats(Seconds at) const;
+
+    Frames duration() const;
+    const AnimationData& data() const;
+private:
+    std::shared_ptr<const AnimationData> _data;
 };
 
 #endif

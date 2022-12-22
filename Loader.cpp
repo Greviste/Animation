@@ -55,13 +55,9 @@ Eigen::Quaternionf toRotation(FbxNode& node, fbxsdk::FbxDouble3 r)
 
 struct Loader
 {
-    ModelData& data;
-    AnimationData& anim;
-    Skeleton& skeleton;
-    explicit Loader(LoadedData& target)
-        :data{get<ModelData>(target)}, anim{get<AnimationData>(target)}, skeleton{get<Skeleton>(target)}
-    {
-    }
+    std::shared_ptr<ModelData> data;
+    std::vector<std::shared_ptr<AnimationData>> anims;
+    std::shared_ptr<Skeleton> skeleton;
 
     void load(const std::filesystem::path& file);
 
@@ -120,8 +116,8 @@ private:
     {
         int size = mesh.GetControlPointsCount();
         int faces = mesh.GetPolygonCount();
-        data.vertices.reserve(data.vertices.size() + size);
-        data.faces.reserve(data.faces.size() + faces);
+        data->vertices.reserve(data->vertices.size() + size);
+        data->faces.reserve(data->faces.size() + faces);
         const FbxVector4* vectors = mesh.GetControlPoints();
         vertex_instances.clear();
         vertex_instances.resize(size);
@@ -132,13 +128,13 @@ private:
             FbxVector4 normal; mesh.GetPolygonVertexNormal(polygon, i, normal);
             for(unsigned other_index : vertex_instances[index])
             {
-                if(data.vertices[other_index].normal == normal) return other_index;
+                if(data->vertices[other_index].normal == normal) return other_index;
             }
             Vertex v{};
             for(int i = 0; i < 3; ++i) v.pos[i] = vectors[index][i];
             for(int i = 0; i < 3; ++i) v.normal[i] = normal[i];
-            vertex_instances[index].push_back(data.vertices.size());
-            data.vertices.push_back(std::move(v));
+            vertex_instances[index].push_back(data->vertices.size());
+            data->vertices.push_back(std::move(v));
             return vertex_instances[index].back();
         };
 
@@ -150,7 +146,7 @@ private:
             for(int j = 2; j < polygon_size; ++j)
             {
                 unsigned current_i = getVertexInstance(i, j);
-                data.faces.emplace_back(Triangle{{first_i, previous_i, current_i}});
+                data->faces.emplace_back(Triangle{{first_i, previous_i, current_i}});
                 previous_i = current_i;
             }
         }
@@ -183,7 +179,7 @@ private:
             {
                 for(unsigned index : vertex_instances[cluster.GetControlPointIndices()[j]])
                 {
-                    addWeightToVertex(data.vertices[index], bone, cluster.GetControlPointWeights()[j]);
+                    addWeightToVertex(data->vertices[index], bone, cluster.GetControlPointWeights()[j]);
                 }
             }
         }
@@ -210,7 +206,7 @@ private:
     void buildSkeletonBranch(BoneIndex root, std::optional<BoneIndex> parent, std::vector<BoneIndex>& remap)
     {
         FbxNode& node = *armature[root];
-        remap[root] = skeleton.addBone(node.GetName(),
+        remap[root] = skeleton->addBone(node.GetName(),
             {toVector(node.LclTranslation.Get()), toRotation(node, node.LclRotation.Get()), toVector(node.LclScaling.Get())}, parent);
         int n_child = node.GetChildCount();
         for(int i = 0; i < n_child; ++i)
@@ -224,7 +220,7 @@ private:
 
     void remapVertexBones(const std::vector<BoneIndex>& remap)
     {
-        for(Vertex& v : data.vertices)
+        for(Vertex& v : data->vertices)
         {
             for(BoneIndex& b : v.bones)
             {
@@ -266,33 +262,34 @@ private:
         return remap;
     }
 
-    void decodeAnimation(const FbxScene& scene)
+    Seconds getAnimationDuration(FbxAnimLayer& layer)
     {
-        if(scene.GetSrcObjectCount<FbxAnimStack>() == 0)
-            throw std::runtime_error("No animation");
-        
-        FbxAnimStack& anim_stack = *scene.GetSrcObject<FbxAnimStack>();
-        if(anim_stack.GetMemberCount<FbxAnimLayer>() == 0)
-            throw std::runtime_error("No animation");
-        FbxAnimLayer& anim_layer = *anim_stack.GetMember<FbxAnimLayer>();
-
-        anim.curves.resize(armature.size());
+        const char* const components[] = {FBXSDK_CURVENODE_COMPONENT_X, FBXSDK_CURVENODE_COMPONENT_Y, FBXSDK_CURVENODE_COMPONENT_Z};
 
         FbxTime duration;
-        const char* const components[] = {FBXSDK_CURVENODE_COMPONENT_X, FBXSDK_CURVENODE_COMPONENT_Y, FBXSDK_CURVENODE_COMPONENT_Z};
         for(std::size_t i = 0; i < armature.size(); ++i) for(const char* component : components)
         {
-            FbxAnimCurve* curve = armature[i]->LclRotation.GetCurve(&anim_layer, component);
+            FbxAnimCurve* curve = armature[i]->LclRotation.GetCurve(&layer, component);
             if(!curve) continue;
             FbxTime last = curve->KeyGetTime(curve->KeyGetCount() - 1);
             if(last > duration) duration = last;
         }
-        Seconds duration_s{duration.GetSecondDouble()};
+        return Seconds{duration.GetSecondDouble()};
+    }
+
+    AnimationData decodeAnimation(FbxAnimLayer& layer)
+    {
+        const char* const components[] = {FBXSDK_CURVENODE_COMPONENT_X, FBXSDK_CURVENODE_COMPONENT_Y, FBXSDK_CURVENODE_COMPONENT_Z};
+
+        AnimationData anim;
+        anim.skeleton = skeleton;
+        anim.curves.resize(armature.size());
+        Seconds duration = getAnimationDuration(layer);
         for(BoneIndex i = 0; i < armature.size(); ++i)
         {
             FbxAnimCurve* curves[3];
-            std::ranges::transform(components, curves, [&](auto component) { return armature[i]->LclRotation.GetCurve(&anim_layer, component); });
-            for(Frames frame{}; frame < duration_s; ++frame)
+            std::ranges::transform(components, curves, [&](auto component) { return armature[i]->LclRotation.GetCurve(&layer, component); });
+            for(Frames frame{}; frame < duration; ++frame)
             {
                 FbxDouble3 euler{};
                 FbxTime time;
@@ -301,11 +298,31 @@ private:
                 {
                     if(curves[i]) euler[i] = curves[i]->Evaluate(time);
                 }
-                anim.curves[i].keyframes.emplace_back(frame, skeleton.boneTransform(i).rotation.conjugate() * toRotation(*armature[i], euler));
+                anim.curves[i].keyframes.emplace_back(frame, skeleton->boneTransform(i).rotation.conjugate() * toRotation(*armature[i], euler));
             }
         }
         static_assert(std::is_same_v<decltype(anim.duration), Frames>, "Remember to update this line when you switch this type to Seconds!");
-        anim.duration = duration_cast<decltype(anim.duration)>(duration_s);
+        anim.duration = duration_cast<decltype(anim.duration)>(duration);
+
+        return anim;
+    }
+
+    void decodeAnimations(const FbxScene& scene)
+    {
+        if(scene.GetSrcObjectCount<FbxAnimStack>() == 0)
+            throw std::runtime_error("No animation");
+        
+        FbxAnimStack& anim_stack = *scene.GetSrcObject<FbxAnimStack>();
+        int n = anim_stack.GetMemberCount<FbxAnimLayer>();
+        if(!n)
+            throw std::runtime_error("No animation");
+        
+        anims.resize(n);
+        for(int i = 0; i < n; ++i)
+        {
+            FbxAnimLayer& layer = *anim_stack.GetMember<FbxAnimLayer>(i);
+            anims[i] = std::make_shared<AnimationData>(decodeAnimation(layer));
+        }
     }
 
     FbxManager* manager;
@@ -315,6 +332,9 @@ private:
 
 void Loader::load(const std::filesystem::path& file)
 {
+    data = std::make_shared<ModelData>();
+    skeleton = std::make_shared<Skeleton>();
+
     auto u_manager = setupUniqueManager();
     FbxScene& scene = importScene(file);
 
@@ -322,15 +342,21 @@ void Loader::load(const std::filesystem::path& file)
     auto remap = buildSkeleton();
     remapVertexBones(remap);
     reorderArmature(remap);
-    decodeAnimation(scene);
+    data->skeleton = skeleton;
+    decodeAnimations(scene);
 }
 }
 
 LoadedData decodeFbx(const std::filesystem::path& file)
 {
-    LoadedData result;
-    Loader loader{result};
+    Loader loader;
     loader.load(file);
+
+    LoadedData result;
+    get<0>(result) = std::move(loader.data);
+    auto& anims = get<1>(result);
+    anims.resize(loader.anims.size());
+    std::ranges::move(loader.anims, anims.begin());
 
     return result;
 }

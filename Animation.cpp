@@ -15,9 +15,13 @@ Eigen::Quaternionf AnimationCurve::sample(Seconds at) const
 {
     if(keyframes.empty())
         return Eigen::Quaternionf::Identity();
-    if(auto it = std::ranges::find(keyframes, at, &Keyframe::time); it != keyframes.end())
+    auto it = std::ranges::upper_bound(keyframes, at, std::ranges::less{}, &Keyframe::time);
+    if(it == keyframes.begin())
         return it->rotation;
-    throw std::runtime_error("Keyframe interpolation not supported yet");
+    if(it == keyframes.end())
+        return keyframes.back().rotation;
+    auto previous = it - 1;
+    return previous->rotation.slerp((at - previous->time) / (it->time - previous->time), it->rotation);
 }
 
 Animation::Animation(std::shared_ptr<const AnimationData> data)
@@ -41,7 +45,7 @@ std::vector<Eigen::Matrix4f> Animation::buildBoneMats(Seconds at) const
     return bone_mats;
 }
 
-Frames Animation::duration() const
+Seconds Animation::duration() const
 {
     return _data->duration;
 }

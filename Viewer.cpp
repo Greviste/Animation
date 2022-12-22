@@ -33,8 +33,8 @@ void Viewer::setModel(std::unique_ptr<Model> model, std::unique_ptr<Animation> a
 
 void Viewer::handleModelChanged()
 {
-    emit animLengthSet(_anim->duration().count());
-    _frame = Frames{0};
+    emit animLengthSet(duration_cast<Frames>(_anim->duration()).count());
+    _time = Frames{0};
     emit frameChanged(0);
 
     constexpr float inf = std::numeric_limits<float>::infinity();
@@ -69,7 +69,8 @@ void Viewer::displayPose(bool display)
 
 void Viewer::setFrame(int f)
 {
-    _frame = Frames{f};
+    _time = Frames{f};
+    consumeTick();
     emit frameChanged(f);
     updateGL();
 }
@@ -89,7 +90,7 @@ void Viewer::draw()
 {
     if(!_model) return;
 
-    _model->draw(*camera(), _anim.get(), _frame);
+    _model->draw(*camera(), _anim.get(), _time);
 
     if(_display_skeleton || _display_pose)
     {
@@ -107,17 +108,26 @@ void Viewer::draw()
         if(_anim && _display_pose)
         {
             glColor3f(1,0,0);
-            auto bone_mats = _anim->buildBoneMats(_frame);
+            auto bone_mats = _anim->buildBoneMats(_time);
             drawBones(bone_mats.data());
         }
         gl.glEnable(GL_DEPTH_TEST);
     }
 }
 
+Seconds Viewer::consumeTick()
+{
+    auto now = std::chrono::high_resolution_clock::now();
+    Seconds delta = now - _last_tick;
+    _last_tick = now;
+
+    return delta;
+}
+
 void Viewer::startAnimation()
 {
     QGLViewer::startAnimation();
-    _last_frame = std::chrono::high_resolution_clock::now();
+    consumeTick();
 }
 
 void Viewer::stopAnimation()
@@ -130,11 +140,7 @@ void Viewer::animate()
 {
     if(!_anim) return;
 
-    auto now = std::chrono::high_resolution_clock::now();
-    while(now - _last_frame > Frames{1})
-    {
-        if(++_frame >= _anim->duration()) _frame = Frames{0};
-        _last_frame += duration_cast<decltype(_last_frame)::duration>(Frames{1});
-        emit frameChanged(_frame.count());
-    }
+    _time += consumeTick();
+    while(_time > _anim->duration()) _time -= _anim->duration();
+    emit frameChanged(duration_cast<Frames>(_time).count());
 }

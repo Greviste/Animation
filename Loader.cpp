@@ -284,25 +284,29 @@ private:
         AnimationData anim;
         anim.skeleton = skeleton;
         anim.curves.resize(armature.size());
-        Seconds duration = getAnimationDuration(layer);
+        anim.duration = getAnimationDuration(layer);
         for(BoneIndex i = 0; i < armature.size(); ++i)
         {
             FbxAnimCurve* curves[3];
             std::ranges::transform(components, curves, [&](auto component) { return armature[i]->LclRotation.GetCurve(&layer, component); });
-            for(Frames frame{}; frame < duration; ++frame)
+            auto extract = [&](Seconds t)
             {
                 FbxDouble3 euler{};
                 FbxTime time;
-                time.SetSecondDouble(duration_cast<Seconds>(frame).count());
+                time.SetSecondDouble(t.count());
                 for(int i = 0; i < 3; ++i)
                 {
                     if(curves[i]) euler[i] = curves[i]->Evaluate(time);
                 }
-                anim.curves[i].keyframes.emplace_back(frame, skeleton->boneTransform(i).rotation.conjugate() * toRotation(*armature[i], euler));
-            }
+                anim.curves[i].keyframes.emplace_back(t, skeleton->boneTransform(i).rotation.conjugate() * toRotation(*armature[i], euler));
+            };
+            Frames frame{};
+            do
+                extract(frame);
+            while(++frame < anim.duration);
+            if(frame != anim.duration)
+                extract(anim.duration);
         }
-        static_assert(std::is_same_v<decltype(anim.duration), Frames>, "Remember to update this line when you switch this type to Seconds!");
-        anim.duration = duration_cast<decltype(anim.duration)>(duration);
 
         return anim;
     }

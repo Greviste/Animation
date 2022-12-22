@@ -32,6 +32,7 @@ protected:
     void animate() override;
 
 private:
+    Seconds consumeTick();
     void drawBones(const Eigen::Matrix4f* bone_mats = nullptr);
     void handleModelChanged();
 
@@ -41,8 +42,8 @@ private:
     bool _display_skeleton = false;
     bool _display_pose = false;
 
-    Frames _frame;
-    std::chrono::high_resolution_clock::time_point _last_frame;
+    Seconds _time;
+    std::chrono::high_resolution_clock::time_point _last_tick;
 };
 
 #endif

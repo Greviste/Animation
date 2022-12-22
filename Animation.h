@@ -34,7 +34,7 @@ struct AnimationCurve
 struct AnimationData
 {
     std::vector<AnimationCurve> curves;
-    Frames duration;
+    Seconds duration;
     std::shared_ptr<const Skeleton> skeleton;
 };
 
@@ -44,7 +44,7 @@ public:
     Animation(std::shared_ptr<const AnimationData> data);
     std::vector<Eigen::Matrix4f> buildBoneMats(Seconds at) const;
 
-    Frames duration() const;
+    Seconds duration() const;
     const AnimationData& data() const;
 private:
     std::shared_ptr<const AnimationData> _data;

@@ -37,7 +37,7 @@ class Model
 public:
     Model(std::shared_ptr<const ModelData> data);
 
-    void draw(const qglviewer::Camera& camera, const Animation* anim = nullptr, Seconds at = Seconds{0});
+    void draw(const qglviewer::Camera& camera, const Animation* anim = nullptr);
     void setDualQuatPart(float part); //Part is 0-1
 
     const ModelData& data() const;

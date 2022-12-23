@@ -36,7 +36,7 @@ void Model::buildModel()
     _size = _data->faces.size() * 3;
 }
 
-void Model::draw(const qglviewer::Camera& camera, const Animation* anim, Seconds at)
+void Model::draw(const qglviewer::Camera& camera, const Animation* anim)
 {
     auto& gl = QGl();
     gl.glUseProgram(_program);
@@ -48,7 +48,7 @@ void Model::draw(const qglviewer::Camera& camera, const Animation* anim, Seconds
     std::vector<Eigen::Matrix4f> bone_mats(_data->skeleton->boneCount(), Eigen::Matrix4f::Identity());
     std::vector<Eigen::Matrix4f> norm_bone_mats(_data->skeleton->boneCount(), Eigen::Matrix4f::Identity());
     std::vector dual_quats(_data->skeleton->boneCount(), Eigen::Matrix<float, 4, 2>{{0,0},{0,0},{0,0},{1,0}});
-    if(anim) std::tie(bone_mats, norm_bone_mats, dual_quats) = anim->buildBoneMats(at);
+    if(anim) std::tie(bone_mats, norm_bone_mats, dual_quats) = anim->buildBoneMats();
 
     gl.glUniformMatrix4fv(gl.glGetUniformLocation(_program, "proj_matrix"),
                                        1, GL_FALSE, proj_matrix.data());

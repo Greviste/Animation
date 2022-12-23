@@ -12,7 +12,7 @@ void MainWindow::on_open_action_triggered()
 {
     QString file = QFileDialog::getOpenFileName(this, "Open FBX file", "", "FBX files (*.fbx)");
     auto result = decodeFbx(file.toLocal8Bit().data());
-    viewer->setModel(std::make_unique<Model>(get<0>(result)), std::make_unique<Animation>(get<1>(result)[0]));
+    viewer->setModel(std::make_unique<Model>(get<0>(result)), std::make_unique<SimpleAnimation>(get<1>(result)[0]));
 }
 
 void MainWindow::on_viewer_frameChanged(int f)

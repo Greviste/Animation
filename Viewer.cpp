@@ -34,7 +34,7 @@ void Viewer::setModel(std::unique_ptr<Model> model, std::unique_ptr<Animation> a
 void Viewer::handleModelChanged()
 {
     emit animLengthSet(duration_cast<Frames>(_anim->duration()).count());
-    _time = Frames{0};
+    _anim->reset();
     emit frameChanged(0);
 
     constexpr float inf = std::numeric_limits<float>::infinity();
@@ -69,7 +69,9 @@ void Viewer::displayPose(bool display)
 
 void Viewer::setFrame(int f)
 {
-    _time = Frames{f};
+    if(!_anim) return;
+
+    _anim->reset(Frames{f});
     consumeTick();
     emit frameChanged(f);
     updateGL();
@@ -105,7 +107,7 @@ void Viewer::draw()
 {
     if(!_model) return;
 
-    _model->draw(*camera(), _anim.get(), _time);
+    _model->draw(*camera(), _anim.get());
 
     if(_display_skeleton || _display_pose)
     {
@@ -123,7 +125,7 @@ void Viewer::draw()
         if(_anim && _display_pose)
         {
             glColor3f(1,0,0);
-            auto bone_mats = get<0>(_anim->buildBoneMats(_time));
+            auto bone_mats = get<0>(_anim->buildBoneMats());
             drawBones(bone_mats.data());
         }
         gl.glEnable(GL_DEPTH_TEST);
@@ -155,7 +157,6 @@ void Viewer::animate()
 {
     if(!_anim) return;
 
-    _time += consumeTick();
-    while(_time > _anim->duration()) _time -= _anim->duration();
-    emit frameChanged(duration_cast<Frames>(_time).count());
+    _anim->tick(consumeTick());
+    emit frameChanged(duration_cast<Frames>(_anim->time()).count());
 }

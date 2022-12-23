@@ -41,13 +41,68 @@ struct AnimationData
 class Animation
 {
 public:
-    Animation(std::shared_ptr<const AnimationData> data);
-    std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> buildBoneMats(Seconds at) const;
+    std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> buildBoneMats() const;
 
-    Seconds duration() const;
-    const AnimationData& data() const;
+    virtual void reset(Seconds at={}) = 0;
+    virtual void tick(Seconds delta) = 0;
+    virtual Eigen::Quaternionf getBoneRot(BoneIndex index) const = 0;
+    virtual Seconds time() const = 0;
+    virtual Seconds duration() const = 0;
+    virtual std::shared_ptr<const Skeleton> skeleton() const = 0;
+
+    virtual ~Animation() = default;
+protected:
+    Animation() = default;
+};
+
+class NullAnimation : public Animation
+{
+public:
+    NullAnimation(std::shared_ptr<const Skeleton> skeleton)
+        :_skeleton(std::move(skeleton))
+    {
+        if(!_skeleton) throw std::invalid_argument("Animation built without skeleton");
+    }
+    void reset(Seconds at={}) override {}
+    void tick(Seconds delta) override {}
+    Eigen::Quaternionf getBoneRot(BoneIndex index) const override
+    {
+        return Eigen::Quaternionf::Identity();
+    }
+    Seconds time() const override
+    {
+        return {};
+    }
+    Seconds duration() const override
+    {
+        return {};
+    }
+    std::shared_ptr<const Skeleton> skeleton() const override
+    {
+        return _skeleton;
+    }
+
 private:
+    std::shared_ptr<const Skeleton> _skeleton;
+};
+
+class SimpleAnimation : public Animation
+{
+public:
+    SimpleAnimation(std::shared_ptr<const AnimationData> data);
+
+    void reset(Seconds at={}) override;
+    void tick(Seconds delta) override;
+    Eigen::Quaternionf getBoneRot(BoneIndex index) const override;
+    Seconds time() const override;
+    Seconds duration() const override;
+    std::shared_ptr<const Skeleton> skeleton() const override;
+
+    std::shared_ptr<const AnimationData> data() const;
+private:
+    void loopBack();
     std::shared_ptr<const AnimationData> _data;
+    Seconds _timer{};
 };
 
 #endif

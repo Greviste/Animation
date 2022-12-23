@@ -34,31 +34,26 @@ Eigen::Quaternionf AnimationCurve::sample(Seconds at) const
     return previous->rotation.slerp((at - previous->time) / (it->time - previous->time), it->rotation);
 }
 
-Animation::Animation(std::shared_ptr<const AnimationData> data)
-    :_data{std::move(data)}
-{
-    if(!_data) throw std::invalid_argument("Animation built without data");
-}
-
-std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> Animation::buildBoneMats(Seconds at) const
+std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> Animation::buildBoneMats() const
 {
     std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> result;
     auto& [bone_mats, norm_bone_mats, dual_quats] = result;
-    bone_mats.resize(_data->skeleton->boneCount());
-    norm_bone_mats.resize(_data->skeleton->boneCount());
-    dual_quats.resize(_data->skeleton->boneCount());
+    const Skeleton* skeleton = this->skeleton().get();
+    bone_mats.resize(skeleton->boneCount());
+    norm_bone_mats.resize(skeleton->boneCount());
+    dual_quats.resize(skeleton->boneCount());
     
-    _data->skeleton->exploreTree(0,
+    skeleton->exploreTree(0,
     [&](BoneIndex index, Eigen::Matrix4f& mat_skinned, Eigen::Matrix4f& inv_mat_skinned, Eigen::Matrix4f& mat_unskinned, Eigen::Matrix4f& inv_mat_unskinned,
         Eigen::Quaternionf& unskinned_rotation, Eigen::Quaternionf& skinned_rotation)
     {
-        Transform transform = _data->skeleton->boneTransform(index);
+        Transform transform = skeleton->boneTransform(index);
 
         mat_unskinned.applyOnTheRight(transform.matrix());
         inv_mat_unskinned.applyOnTheLeft(transform.inverseMatrix());
         unskinned_rotation *= transform.rotation;
 
-        transform.rotation *= _data->curves[index].sample(at);
+        transform.rotation *= getBoneRot(index);
 
         mat_skinned.applyOnTheRight(transform.matrix());
         inv_mat_skinned.applyOnTheLeft(transform.inverseMatrix());
@@ -72,12 +67,51 @@ std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vect
     return result;
 }
 
-Seconds Animation::duration() const
+SimpleAnimation::SimpleAnimation(std::shared_ptr<const AnimationData> data)
+    :_data{std::move(data)}
+{
+    if(!_data) throw std::invalid_argument("Animation built without data");
+}
+
+void SimpleAnimation::reset(Seconds at)
+{
+    _timer = at;
+    loopBack();
+}
+
+void SimpleAnimation::tick(Seconds delta)
+{
+    _timer += delta;
+    loopBack();
+}
+
+Eigen::Quaternionf SimpleAnimation::getBoneRot(BoneIndex index) const
+{
+    return _data->curves[index].sample(_timer);
+}
+
+Seconds SimpleAnimation::time() const
+{
+    return _timer;
+}
+
+Seconds SimpleAnimation::duration() const
 {
     return _data->duration;
 }
 
-const AnimationData& Animation::data() const
+std::shared_ptr<const Skeleton> SimpleAnimation::skeleton() const
 {
-    return *_data;
+    return _data->skeleton;
+}
+
+std::shared_ptr<const AnimationData> SimpleAnimation::data() const
+{
+    return _data;
+}
+
+void SimpleAnimation::loopBack()
+{
+    Seconds d = duration();
+    while(_timer > d) _timer -= d;
 }

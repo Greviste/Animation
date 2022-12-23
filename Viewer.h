@@ -44,7 +44,6 @@ private:
     bool _display_skeleton = false;
     bool _display_pose = false;
 
-    Seconds _time;
     std::chrono::high_resolution_clock::time_point _last_tick;
 };
 

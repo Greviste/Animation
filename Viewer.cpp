@@ -75,6 +75,21 @@ void Viewer::setFrame(int f)
     updateGL();
 }
 
+void Viewer::useLinearSkinning()
+{
+    if(!_model) return;
+    _model->setDualQuatPart(0);
+    updateGL();
+}
+
+void Viewer::useDualQuatSkinning()
+{
+    if(!_model) return;
+    _model->setDualQuatPart(1);
+    updateGL();
+}
+
+
 void Viewer::init()
 {
     auto& gl = QGl();
@@ -108,7 +123,7 @@ void Viewer::draw()
         if(_anim && _display_pose)
         {
             glColor3f(1,0,0);
-            auto bone_mats = _anim->buildBoneMats(_time).first;
+            auto bone_mats = get<0>(_anim->buildBoneMats(_time));
             drawBones(bone_mats.data());
         }
         gl.glEnable(GL_DEPTH_TEST);

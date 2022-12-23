@@ -42,7 +42,7 @@ class Animation
 {
 public:
     Animation(std::shared_ptr<const AnimationData> data);
-    std::pair<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>> buildBoneMats(Seconds at) const;
+    std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> buildBoneMats(Seconds at) const;
 
     Seconds duration() const;
     const AnimationData& data() const;

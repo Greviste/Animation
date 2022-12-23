@@ -23,6 +23,8 @@ public slots:
     void displaySkeleton(bool display);
     void displayPose(bool display);
     void setFrame(int f);
+    void useLinearSkinning();
+    void useDualQuatSkinning();
 
 protected:
     void init() override;

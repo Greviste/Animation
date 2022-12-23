@@ -38,6 +38,7 @@ public:
     Model(std::shared_ptr<const ModelData> data);
 
     void draw(const qglviewer::Camera& camera, const Animation* anim = nullptr, Seconds at = Seconds{0});
+    void setDualQuatPart(float part); //Part is 0-1
 
     const ModelData& data() const;
 private:
@@ -49,6 +50,7 @@ private:
     SafeGl::Program _program;
     std::size_t _size = 0;
 
+    float _dual_quat_part = 0;
     std::shared_ptr<const ModelData> _data;
 };
 

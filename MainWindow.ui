@@ -219,6 +219,8 @@
     <slot>toggleAnimation()</slot>
     <slot>stopAnimation()</slot>
     <slot>setFrame(int)</slot>
+    <slot>useLinearSkinning()</slot>
+    <slot>useDualQuatSkinning()</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -369,6 +371,38 @@
     <hint type="destinationlabel">
      <x>275</x>
      <y>462</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>linear_skin_radio</sender>
+   <signal>clicked()</signal>
+   <receiver>viewer</receiver>
+   <slot>useLinearSkinning()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>644</x>
+     <y>92</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>582</x>
+     <y>89</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dual_quat_skin_radio</sender>
+   <signal>clicked()</signal>
+   <receiver>viewer</receiver>
+   <slot>useDualQuatSkinning()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>642</x>
+     <y>118</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>549</x>
+     <y>123</y>
     </hint>
    </hints>
   </connection>

@@ -282,6 +282,7 @@ private:
         const char* const components[] = {FBXSDK_CURVENODE_COMPONENT_X, FBXSDK_CURVENODE_COMPONENT_Y, FBXSDK_CURVENODE_COMPONENT_Z};
 
         AnimationData anim;
+        anim.name = layer.GetName();
         anim.skeleton = skeleton;
         anim.curves.resize(armature.size());
         anim.duration = getAnimationDuration(layer);

@@ -79,6 +79,11 @@ SimpleAnimation::SimpleAnimation(std::shared_ptr<const AnimationData> data)
     if(!_data) throw std::invalid_argument("Animation built without data");
 }
 
+std::string SimpleAnimation::name() const
+{
+    return _data->name;
+}
+
 void SimpleAnimation::reset(Seconds at)
 {
     _timer = at;
@@ -190,6 +195,11 @@ void CompositeAnimation::sanitize(std::unique_ptr<Animation>& anim) const
         throw std::invalid_argument("Can't mix skeletons in composite animation");
 }
 
+std::string AdditiveAnimation::name() const
+{
+    return "Add";
+}
+
 void AdditiveAnimation::reset(Seconds at)
 {
     if(at.count())
@@ -247,6 +257,11 @@ void BlendedAnimation::setBlendFactor(float f)
         if(std::ranges::find(old_targets, target) != old_targets.end()) continue;
         resync(target);
     }
+}
+
+std::string BlendedAnimation::name() const
+{
+    return "Blend";
 }
 
 void BlendedAnimation::reset(Seconds at)

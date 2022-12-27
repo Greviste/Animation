@@ -33,6 +33,7 @@ struct AnimationCurve
 
 struct AnimationData
 {
+    std::string name;
     std::vector<AnimationCurve> curves;
     Seconds duration;
     std::shared_ptr<const Skeleton> skeleton;
@@ -43,6 +44,7 @@ class Animation
 public:
     std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> buildBoneMats() const;
 
+    virtual std::string name() const = 0;
     virtual void reset(Seconds at={}) = 0;
     virtual void tick(Seconds delta) = 0;
     virtual Eigen::Quaternionf getBoneRot(BoneIndex index) const = 0;
@@ -63,6 +65,7 @@ public:
     {
         if(!_skeleton) throw std::invalid_argument("Animation built without skeleton");
     }
+    std::string name() const override { return "Null"; }
     void reset(Seconds at={}) override {}
     void tick(Seconds delta) override {}
     Eigen::Quaternionf getBoneRot(BoneIndex index) const override
@@ -91,6 +94,7 @@ class SimpleAnimation : public Animation
 public:
     SimpleAnimation(std::shared_ptr<const AnimationData> data);
 
+    std::string name() const override;
     void reset(Seconds at={}) override;
     void tick(Seconds delta) override;
     Eigen::Quaternionf getBoneRot(BoneIndex index) const override;
@@ -133,6 +137,7 @@ class AdditiveAnimation : public CompositeAnimation
 public:
     using CompositeAnimation::CompositeAnimation;
 
+    std::string name() const override;
     void reset(Seconds at={}) override;
     void tick(Seconds delta) override;
     Eigen::Quaternionf getBoneRot(BoneIndex index) const override;
@@ -148,6 +153,7 @@ public:
     float blendFactor() const;
     void setBlendFactor(float f);
 
+    std::string name() const override;
     void reset(Seconds at={}) override;
     void tick(Seconds delta) override;
     Eigen::Quaternionf getBoneRot(BoneIndex index) const override;

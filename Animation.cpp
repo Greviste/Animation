@@ -19,6 +19,12 @@ auto buildDualQuat(Eigen::Quaternionf rotation, Eigen::Vector4f translation)
     result.col(1) = (Eigen::Quaternionf{translation} * rotation).coeffs() / 2;
     return result;
 }
+
+template<typename T, typename F>
+T lerp(T a, T b, F t)
+{
+    return a + (b - a) * t;
+}
 }
 
 Eigen::Quaternionf AnimationCurve::sample(Seconds at) const
@@ -114,4 +120,204 @@ void SimpleAnimation::loopBack()
 {
     Seconds d = duration();
     while(_timer > d) _timer -= d;
+}
+
+CompositeAnimation::CompositeAnimation(std::shared_ptr<const Skeleton> ref)
+    :CompositeAnimation(std::make_unique<NullAnimation>(ref))
+{
+}
+
+CompositeAnimation::CompositeAnimation(std::unique_ptr<Animation> ref)
+{
+    if(!ref)
+        throw std::invalid_argument("CompositeAnimation can't be built with null");
+    
+    _children.emplace_back(std::move(ref));
+}
+
+auto CompositeAnimation::addAnimation(std::unique_ptr<Animation> anim) -> size_t
+{
+    sanitize(anim);
+    _children.emplace_back(std::move(anim));
+    rebuild();
+    return _children.size() - 1;
+}
+
+std::unique_ptr<Animation> CompositeAnimation::releaseAnimation(size_t index)
+{
+    auto old = std::move(_children[index]);
+    _children.erase(_children.begin() + index);
+    if(_children.empty())
+        _children.emplace_back(std::make_unique<NullAnimation>(old->skeleton()));
+    rebuild();
+    return old;
+}
+
+std::unique_ptr<Animation> CompositeAnimation::swapAnimation(size_t index, std::unique_ptr<Animation> new_anim)
+{
+    sanitize(new_anim);
+    swap(_children[index], new_anim);
+    rebuild();
+    return new_anim;
+}
+
+auto CompositeAnimation::count() const -> size_t
+{
+    return _children.size();
+}
+
+const Animation& CompositeAnimation::operator[](size_t i) const
+{
+    return *_children[i];
+}
+
+Animation& CompositeAnimation::operator[](size_t i)
+{
+    return const_cast<Animation&>(const_cast<const CompositeAnimation&>(*this)[i]);
+}
+
+std::shared_ptr<const Skeleton> CompositeAnimation::skeleton() const
+{
+    return _children.front()->skeleton();
+}
+
+void CompositeAnimation::sanitize(std::unique_ptr<Animation>& anim) const
+{
+    if(!anim)
+        anim = std::make_unique<NullAnimation>(skeleton());
+    
+    if(anim->skeleton() != skeleton())
+        throw std::invalid_argument("Can't mix skeletons in composite animation");
+}
+
+void AdditiveAnimation::reset(Seconds at)
+{
+    if(at.count())
+    {
+        (*this)[0].reset();
+    }
+    else
+    {
+        for(size_t i = 0; i < count(); ++i)
+        {
+            (*this)[i].reset(at);
+        }
+    }
+}
+
+void AdditiveAnimation::tick(Seconds delta)
+{
+    for(size_t i = 0; i < count(); ++i)
+    {
+        (*this)[i].tick(delta);
+    }
+}
+
+Eigen::Quaternionf AdditiveAnimation::getBoneRot(BoneIndex index) const
+{
+    Eigen::Quaternionf rot = Eigen::Quaternionf::Identity();
+    for(size_t i = 0; i < count(); ++i)
+    {
+        rot *= (*this)[i].getBoneRot(index);
+    }
+    return rot;
+}
+
+Seconds AdditiveAnimation::time() const
+{
+    return (*this)[0].time();
+}
+
+Seconds AdditiveAnimation::duration() const
+{
+    return (*this)[0].duration();
+}
+
+float BlendedAnimation::blendFactor() const
+{
+    return _blend_factor;
+}
+
+void BlendedAnimation::setBlendFactor(float f)
+{
+    auto old_targets = getTargets();
+    _blend_factor = std::clamp<float>(f, 0, count() - 1);
+    for(size_t target : getTargets())
+    {
+        if(std::ranges::find(old_targets, target) != old_targets.end()) continue;
+        resync(target);
+    }
+}
+
+void BlendedAnimation::reset(Seconds at)
+{
+    _normalized_timer = at / duration();
+    if(float t = std::trunc(_normalized_timer)) _normalized_timer -= t;
+
+    for(size_t i : getTargets())
+    {
+        resync(i);
+    }
+}
+
+void BlendedAnimation::tick(Seconds delta)
+{
+    for(size_t i : getTargets())
+    {
+        (*this)[i].tick(delta * speedFactor(i));
+    }
+    _normalized_timer += delta / duration();
+    if(float t = std::trunc(_normalized_timer)) _normalized_timer -= t;
+}
+
+Eigen::Quaternionf BlendedAnimation::getBoneRot(BoneIndex index) const
+{
+    auto targets = getTargets();
+    return (*this)[targets.front()].getBoneRot(index).slerp(localBlendFactor(), (*this)[targets.back()].getBoneRot(index));
+}
+
+Seconds BlendedAnimation::time() const
+{
+    return _normalized_timer * duration();
+}
+
+Seconds BlendedAnimation::duration() const
+{
+    auto targets = getTargets();
+    return lerp((*this)[targets.front()].duration(), (*this)[targets.back()].duration(), localBlendFactor());
+}
+
+float BlendedAnimation::speedFactor(size_t i) const
+{
+    const Seconds from_duration = (*this)[i].duration();
+    Seconds to_duration = duration();
+    if(!from_duration.count() || !to_duration.count())
+        return 1;
+
+    return from_duration / to_duration;
+}
+
+float BlendedAnimation::localBlendFactor() const
+{
+    return _blend_factor - std::trunc(_blend_factor);
+}
+
+std::vector<size_t> BlendedAnimation::getTargets() const
+{
+    std::vector<size_t> result{static_cast<size_t>(std::trunc(_blend_factor))};
+
+    if(_blend_factor != result.front())
+        result.push_back(result.front() + 1);
+        
+    return result;
+}
+
+void BlendedAnimation::resync(size_t i)
+{
+    (*this)[i].reset(_normalized_timer * (*this)[i].duration());
+}
+
+void BlendedAnimation::rebuild()
+{
+    setBlendFactor(_blend_factor);
 }

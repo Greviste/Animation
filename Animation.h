@@ -105,4 +105,65 @@ private:
     Seconds _timer{};
 };
 
+class CompositeAnimation : public Animation
+{
+public:
+    using size_t = std::size_t;
+    CompositeAnimation(std::shared_ptr<const Skeleton> ref);
+    CompositeAnimation(std::unique_ptr<Animation> ref);
+
+    size_t addAnimation(std::unique_ptr<Animation> anim);
+    std::unique_ptr<Animation> releaseAnimation(size_t index);
+    std::unique_ptr<Animation> swapAnimation(size_t index, std::unique_ptr<Animation> new_anim);
+    size_t count() const;
+    const Animation& operator[](size_t i) const;
+    Animation& operator[](size_t i);
+
+    std::shared_ptr<const Skeleton> skeleton() const final override;
+
+private:
+    void sanitize(std::unique_ptr<Animation>& anim) const;
+    virtual void rebuild() {}
+
+    std::vector<std::unique_ptr<Animation>> _children;
+};
+
+class AdditiveAnimation : public CompositeAnimation
+{
+public:
+    using CompositeAnimation::CompositeAnimation;
+
+    void reset(Seconds at={}) override;
+    void tick(Seconds delta) override;
+    Eigen::Quaternionf getBoneRot(BoneIndex index) const override;
+    Seconds time() const override;
+    Seconds duration() const override;
+};
+
+class BlendedAnimation : public CompositeAnimation
+{
+public:
+    using CompositeAnimation::CompositeAnimation;
+
+    float blendFactor() const;
+    void setBlendFactor(float f);
+
+    void reset(Seconds at={}) override;
+    void tick(Seconds delta) override;
+    Eigen::Quaternionf getBoneRot(BoneIndex index) const override;
+    Seconds time() const override;
+    Seconds duration() const override;
+
+private:
+    float speedFactor(size_t i) const;
+    float localBlendFactor() const;
+    std::vector<size_t> getTargets() const;
+    void resync(size_t i);
+
+    void rebuild() override;
+
+    float _blend_factor = 0;
+    float _normalized_timer = 0;
+};
+
 #endif

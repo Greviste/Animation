@@ -58,11 +58,13 @@ void AnimationTreeModel::replaceItem(const QModelIndex& index, std::unique_ptr<A
     if(parent_index.isValid())
     {
         CompositeAnimation& parent_anim = *static_cast<CompositeAnimation*>(parent_index.internalPointer());
-        beginResetModel();
+        beginRemoveRows(parent_index, index.row(), index.row());
         parent_anim.swapAnimation(index.row(), std::move(replacement));
+        endRemoveRows();
+        beginInsertRows(parent_index, index.row(), index.row());
         _parents.clear();
         registerChildren(*static_cast<CompositeAnimation*>(_root.get()));
-        endResetModel();
+        endInsertRows();
     }
     else
     {

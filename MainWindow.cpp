@@ -107,7 +107,7 @@ void MainWindow::on_anim_tree_view_customContextMenuRequested(QPoint pos)
         for(const QModelIndex& i : anim_list_view->selectionModel()->selectedIndexes())
         {
             _tree->replaceItem(index, std::make_unique<SimpleAnimation>(_animations[i.row()].data()));
-            viewer->setAnimation(_tree->getAnimation());
+            if(_use_tree) viewer->setAnimation(_tree->getAnimation());
             return;
         }
     });

@@ -23,6 +23,10 @@ set(PROJECT_SOURCES
     Skeleton.cpp
     Animation.h
     Animation.cpp
+    AnimationListModel.h
+    AnimationListModel.cpp
+    AnimationTreeModel.h
+    AnimationTreeModel.cpp
 )
 set(PROJECT_SHADERS
     shaders/vert.glsl

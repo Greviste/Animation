@@ -24,19 +24,23 @@ void Viewer::drawBones(const Eigen::Matrix4f* bone_mats)
     glEnd();
 }
 
-void Viewer::setModel(std::unique_ptr<Model> model, std::unique_ptr<Animation> anim)
+void Viewer::setModel(std::unique_ptr<Model> model)
 {
     _model = std::move(model);
-    _anim = std::move(anim);
     handleModelChanged();
+}
+
+void Viewer::setAnimation(Animation& anim, bool reset)
+{
+    _anim = &anim;
+    emit animLengthSet(duration_cast<Frames>(_anim->duration()).count());
+    if(reset) _anim->reset();
+    emit frameChanged(duration_cast<Frames>(_anim->time()).count());
+    updateGL();
 }
 
 void Viewer::handleModelChanged()
 {
-    emit animLengthSet(duration_cast<Frames>(_anim->duration()).count());
-    _anim->reset();
-    emit frameChanged(0);
-
     constexpr float inf = std::numeric_limits<float>::infinity();
     qglviewer::Vec min{inf,inf,inf}, max{-inf,-inf,-inf};
     for(const Vertex& v : _model->data().vertices)
@@ -107,7 +111,7 @@ void Viewer::draw()
 {
     if(!_model) return;
 
-    _model->draw(*camera(), _anim.get());
+    _model->draw(*camera(), _anim);
 
     if(_display_skeleton || _display_pose)
     {

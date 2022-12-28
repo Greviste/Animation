@@ -13,7 +13,8 @@ class Viewer : public QGLViewer
 public:
     using QGLViewer::QGLViewer;
 
-    void setModel(std::unique_ptr<Model> model, std::unique_ptr<Animation> animation);
+    void setModel(std::unique_ptr<Model> model);
+    void setAnimation(Animation& animation, bool reset = true);
 
 signals:
     void frameChanged(int);
@@ -39,7 +40,7 @@ private:
     void handleModelChanged();
 
     std::unique_ptr<Model> _model;
-    std::unique_ptr<Animation> _anim;
+    Animation* _anim = nullptr;
 
     bool _display_skeleton = false;
     bool _display_pose = false;

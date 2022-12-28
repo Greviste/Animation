@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1094</width>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1094</width>
      <height>22</height>
     </rect>
    </property>
@@ -41,6 +41,7 @@
     </property>
     <addaction name="actionParameters"/>
     <addaction name="actionPlayer"/>
+    <addaction name="actionAnimations"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuWindow"/>
@@ -177,6 +178,95 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="anims_dock">
+   <property name="windowTitle">
+    <string>Animations</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QSplitter" name="splitter">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <widget class="QGroupBox" name="groupBox_3">
+        <property name="title">
+         <string>Simple Animations</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="1" column="0">
+          <widget class="QPushButton" name="set_simple_anim_button">
+           <property name="text">
+            <string>Set</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QListView" name="anim_list_view"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Animation builder</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="2" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Blending</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QTreeView" name="anim_tree_view">
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectItems</enum>
+           </property>
+           <property name="headerHidden">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="set_anim_button">
+           <property name="text">
+            <string>Set</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QSlider" name="blending_slider">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="pageStep">
+            <number>100</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TicksAbove</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="open_action">
    <property name="text">
     <string>Open...</string>
@@ -205,6 +295,17 @@
    </property>
    <property name="text">
     <string>Player</string>
+   </property>
+  </action>
+  <action name="actionAnimations">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Animations</string>
    </property>
   </action>
  </widget>
@@ -282,7 +383,7 @@
    <sender>player_dock</sender>
    <signal>visibilityChanged(bool)</signal>
    <receiver>actionPlayer</receiver>
-   <slot>setVisible(bool)</slot>
+   <slot>setChecked(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>399</x>
@@ -369,7 +470,7 @@
      <y>556</y>
     </hint>
     <hint type="destinationlabel">
-     <x>275</x>
+     <x>573</x>
      <y>462</y>
     </hint>
    </hints>
@@ -403,6 +504,38 @@
     <hint type="destinationlabel">
      <x>549</x>
      <y>123</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionAnimations</sender>
+   <signal>triggered(bool)</signal>
+   <receiver>anims_dock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>148</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>anims_dock</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>actionAnimations</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>148</x>
+     <y>299</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>

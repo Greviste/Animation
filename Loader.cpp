@@ -282,7 +282,6 @@ private:
         const char* const components[] = {FBXSDK_CURVENODE_COMPONENT_X, FBXSDK_CURVENODE_COMPONENT_Y, FBXSDK_CURVENODE_COMPONENT_Z};
 
         AnimationData anim;
-        anim.name = layer.GetName();
         anim.skeleton = skeleton;
         anim.curves.resize(armature.size());
         anim.duration = getAnimationDuration(layer);
@@ -349,6 +348,11 @@ void Loader::load(const std::filesystem::path& file)
     reorderArmature(remap);
     data->skeleton = skeleton;
     decodeAnimations(scene);
+    int i = 0;
+    for(auto& anim : anims)
+    {
+        anim->name = file.stem().string() + std::to_string(i++);
+    }
 }
 }
 

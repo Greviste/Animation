@@ -31,7 +31,7 @@ QVariant AnimationListModel::data(const QModelIndex& index, int role) const
     if(!index.isValid() || role != Qt::DisplayRole)
         return {};
     
-    return QString(_animations[index.row()]->data()->skeleton->boneName(0).data()); //Placeholder
+    return QString(_animations[index.row()]->name().c_str());
 }
 
 Qt::ItemFlags AnimationListModel::flags(const QModelIndex& index) const

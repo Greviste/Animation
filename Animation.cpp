@@ -318,6 +318,14 @@ Seconds BlendedAnimation::time() const
 Seconds BlendedAnimation::duration() const
 {
     auto targets = getTargets();
+    if(targets.size() == 2)
+    {
+        for(int i = 0; i < 2; ++i)
+        {
+            if((*this)[targets[i]].duration().count() == 0)
+                return (*this)[targets[1-i]].duration();
+        }
+    }
     return lerp((*this)[targets.front()].duration(), (*this)[targets.back()].duration(), localBlendFactor());
 }
 

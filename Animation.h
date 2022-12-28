@@ -39,6 +39,8 @@ struct AnimationData
     std::shared_ptr<const Skeleton> skeleton;
 };
 
+std::shared_ptr<const AnimationData> retarget(std::shared_ptr<const AnimationData> old, std::shared_ptr<const Skeleton> target);
+
 class Animation
 {
 public:

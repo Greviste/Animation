@@ -27,6 +27,21 @@ void MainWindow::on_open_action_triggered()
     anim_tree_view->setModel(_tree.get());
     viewer->setModel(std::make_unique<Model>(get<0>(result)));
     viewer->setAnimation(_animations[0]);
+    import_action->setEnabled(true);
+}
+
+void MainWindow::on_import_action_triggered()
+{
+    QString file = QFileDialog::getOpenFileName(this, "Open FBX file", "", "FBX files (*.fbx)");
+    if(file.isEmpty())
+        return;
+
+    auto result = decodeFbx(file.toLocal8Bit().data());
+
+    for(auto& data_ptr : get<1>(result))
+    {
+        _animations.addAnimation(std::make_unique<SimpleAnimation>(retarget(data_ptr, viewer->skeleton())));
+    }
 }
 
 void MainWindow::on_viewer_frameChanged(int f)

@@ -15,6 +15,7 @@ public:
 
     void setModel(std::unique_ptr<Model> model);
     void setAnimation(Animation& animation, bool reset = true);
+    std::shared_ptr<const Skeleton> skeleton() const;
 
 signals:
     void frameChanged(int);

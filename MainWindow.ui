@@ -34,6 +34,7 @@
      <string>File</string>
     </property>
     <addaction name="open_action"/>
+    <addaction name="import_action"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -306,6 +307,17 @@
    </property>
    <property name="text">
     <string>Animations</string>
+   </property>
+  </action>
+  <action name="import_action">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Import more animations...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
    </property>
   </action>
  </widget>

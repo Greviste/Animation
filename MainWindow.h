@@ -15,6 +15,7 @@ public:
 
 private slots:
     void on_open_action_triggered();
+    void on_import_action_triggered();
     void on_viewer_frameChanged(int f);
     void on_viewer_animLengthSet(int f);
     void on_set_simple_anim_button_clicked();

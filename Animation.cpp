@@ -40,6 +40,24 @@ Eigen::Quaternionf AnimationCurve::sample(Seconds at) const
     return previous->rotation.slerp((at - previous->time) / (it->time - previous->time), it->rotation);
 }
 
+std::shared_ptr<const AnimationData> retarget(std::shared_ptr<const AnimationData> old, std::shared_ptr<const Skeleton> target)
+{
+    auto result = std::make_shared<AnimationData>();
+    result->name = old->name;
+    result->duration = old->duration;
+    result->skeleton = target;
+    result->curves.resize(target->boneCount());
+    for(BoneIndex i = 0; i < result->curves.size(); ++i)
+    {
+        auto found_index = old->skeleton->findBone(target->boneName(i));
+        if(!found_index)
+            continue;
+        result->curves[i] = old->curves[*found_index];
+    }
+
+    return result;
+}
+
 std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> Animation::buildBoneMats() const
 {
     std::tuple<std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix4f>, std::vector<Eigen::Matrix<float, 4, 2>>> result;

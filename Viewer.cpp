@@ -39,6 +39,11 @@ void Viewer::setAnimation(Animation& anim, bool reset)
     updateGL();
 }
 
+std::shared_ptr<const Skeleton> Viewer::skeleton() const
+{
+    return _model ? _model->data().skeleton : nullptr;
+}
+
 void Viewer::handleModelChanged()
 {
     constexpr float inf = std::numeric_limits<float>::infinity();

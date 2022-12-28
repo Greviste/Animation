@@ -266,7 +266,8 @@ std::string BlendedAnimation::name() const
 
 void BlendedAnimation::reset(Seconds at)
 {
-    _normalized_timer = at / duration();
+    auto dur = duration();
+    _normalized_timer = dur.count() ? at / dur : 0;
     if(float t = std::trunc(_normalized_timer)) _normalized_timer -= t;
 
     for(size_t i : getTargets())
@@ -281,7 +282,7 @@ void BlendedAnimation::tick(Seconds delta)
     {
         (*this)[i].tick(delta * speedFactor(i));
     }
-    _normalized_timer += delta / duration();
+    if(auto dur = duration(); dur.count()) _normalized_timer += delta / dur;
     if(float t = std::trunc(_normalized_timer)) _normalized_timer -= t;
 }
 

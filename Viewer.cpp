@@ -39,6 +39,12 @@ void Viewer::setAnimation(Animation& anim, bool reset)
     updateGL();
 }
 
+void Viewer::removeAnimation()
+{
+    _anim = nullptr;
+    updateGL();
+}
+
 std::shared_ptr<const Skeleton> Viewer::skeleton() const
 {
     return _model ? _model->data().skeleton : nullptr;

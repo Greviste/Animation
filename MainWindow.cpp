@@ -15,6 +15,7 @@ void MainWindow::on_open_action_triggered()
     if(file.isEmpty())
         return;
     
+    viewer->removeAnimation();
     _animations.clear();
     auto result = decodeFbx(file.toLocal8Bit().data());
 
